@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
 
 namespace Dollar
 {
@@ -7,28 +7,48 @@ namespace Dollar
     /// </summary>
     public class Program
     {
+        /// <summary>
+        /// Главный метод
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             #region Ввод числа и проверка на корректность вводимых данных
 
-            //string input = "1020040500.00";
+            string input = "223323432.2";
+            string integerPartText = string.Empty;
+            string fractionalPartText = string.Empty;
 
-            // На входе должно быть десятичное число, где после точки обязательно идут 2 цифры, а перед точкой должна быть хотя бы одна цифра
-            string? input = Console.ReadLine();
-            Match match = Regex.Match(input, "^\\d+\\.\\d\\d$");
+            if (decimal.TryParse(input, out decimal value))
+            {
+                if (value < 0)
+                    throw new Exception("Введено отрицательное число.");
+                if (value > 2000000000)
+                    throw new Exception("Число превышает двух миллиардов.");
 
-            if (!match.Success) throw new Exception("Введено некорректное число.");
-            if (input.Length > 13) throw new Exception("Введено слишком длинное число.");
-
-            string[] list = input.Split('.');
-            string integerPartText = list[0];
-            string fractionalPartText = list[1];
+                string validValueText = value.ToString();
+                string[] list = validValueText.Split('.');
+                integerPartText = list[0];
+                if (list.Length > 1)
+                {
+                    fractionalPartText = list[1];
+                    if (fractionalPartText.Length == 1)
+                        fractionalPartText += "0";
+                }
+            }
 
             if (!string.IsNullOrEmpty(integerPartText) && !int.TryParse(integerPartText, out int integerPart))
                 throw new Exception("Введена некорректная целая часть.");
 
-            if (int.Parse(integerPartText) > 2000000000)
-                throw new Exception("Число превышает двух миллиардов.");
+            if (int.TryParse(fractionalPartText, out int fractPart))
+            {
+                if (fractPart > 99)
+                    throw new Exception("Указан недопустимый цент.");
+            }
+            else
+            {
+                fractionalPartText = "0";
+            }
 
             #endregion
 
@@ -68,23 +88,30 @@ namespace Dollar
                     integerPartList.Add(convertedNumText);
             }
 
+            if (!integerPartList.Any()) integerPartList.Add(NumUtils.NumDict[0]);
+
             #endregion
 
             #region Вывод результата
 
-            List<string> resultTexts = new List<string>();
+            StringBuilder resultText = new StringBuilder();
 
             if (integerPartList.Any())
             {
                 integerPartList.Reverse();
-                resultTexts.Add(string.Join(", ", integerPartList) + " DOLLARS");
+                resultText.AppendJoin(", ", integerPartList);
+                resultText.Append(" DOLLARS");
             }
 
             int fractionalPart = int.Parse(fractionalPartText);
             if (fractionalPart > 0)
-                resultTexts.Add(fractionalPart.GetRestHundredText() + " CENTS");
+            {
+                resultText.Append(" AND ");
+                resultText.Append(fractionalPart.GetRestHundredText());
+                resultText.Append(" CENTS");
+            }
 
-            Console.WriteLine(string.Join(" AND ", resultTexts));
+            Console.WriteLine(resultText);
 
             #endregion
         }
